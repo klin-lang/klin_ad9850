@@ -2,13 +2,13 @@ module klin_ad9850
 import testing
 
 struct Rec {
-    bytes: [8]i64
+    bytes: [8]u8
     n: i32
     latches: i32
     resets: i32
 }
 
-fn rec_write(ctx: *mut u8, b: i64) {
+fn rec_write(ctx: *mut u8, b: u8) {
     let r = cast(*mut Rec, ctx)
     if (*r).n < 8 {
         (*r).bytes[(*r).n] = b
@@ -36,7 +36,7 @@ fn mock_wire(rec: *mut Rec): Wire {
 }
 
 fn new_rec(): Rec {
-    let mut zero: [8]i64
+    let mut zero: [8]u8
     return Rec{ bytes: zero, n: 0, latches: 0, resets: 0 }
 }
 
