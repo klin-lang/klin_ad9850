@@ -9,12 +9,13 @@ package builds the 40-bit tuning word and streams it. No heap, no IRQ, no float.
 
 ## Requirements
 
-- [Klin](https://github.com/klin-lang/klin) compiler
+- [Klin](https://github.com/klin-lang/klin) compiler with numeric `cast`
+  ([issue 154](https://github.com/klin-lang/klin/blob/main/issues/154-numeric-cast.md))
 
 ## Install
 
 ```sh
-klin get github/klin-lang/klin_ad9850@v0.1.0
+klin get github/klin-lang/klin_ad9850@v0.2.0
 ```
 
 Repo: https://github.com/klin-lang/klin_ad9850
@@ -25,17 +26,21 @@ klin test klin_ad9850
 klin run -I. examples/host_smoke.kl
 ```
 
-## API (`@v0.1.0`)
+## API (`@v0.2.0`)
+
+Breaking vs `@v0.1.0`: wire bytes and FTW are typed (`u8` / `u32`) instead of
+everything being `i64`. Tuning math still uses an `i64` intermediate via
+`cast` (prime rule — the C emission is the hand-written cast).
 
 | Symbol | Meaning |
 |---|---|
-| `version(): i32` | `1` at `v0.1.0` |
-| `default_ref_hz(): i64` | `125000000` — the usual module reference clock |
-| `tuning_word(freq_hz, ref_hz): i64` | 32-bit FTW = `floor(freq · 2³² / ref)` |
-| `freq_from_word(ftw, ref_hz): i64` | inverse of `tuning_word` (approx Hz) |
-| `control_byte(phase, power_down): i64` | W4 byte: `(phase & 31) << 3 \| (pd & 1) << 2` |
-| `word_byte(ftw, i): i64` | byte `i` (0 = LSB) of the tuning word |
-| `Wire` | `ctx` + `write` / `latch` / `reset` hooks (no capture) |
+| `version(): i32` | `2` at `v0.2.0` |
+| `default_ref_hz(): u32` | `125000000` — the usual module reference clock |
+| `tuning_word(freq_hz, ref_hz): u32` | 32-bit FTW = `floor(freq · 2³² / ref)` |
+| `freq_from_word(ftw, ref_hz): u32` | inverse of `tuning_word` (approx Hz) |
+| `control_byte(phase, power_down): u8` | W4 byte: `(phase & 31) << 3 \| (pd & 1) << 2` |
+| `word_byte(ftw, i): u8` | byte `i` (0 = LSB) of the tuning word |
+| `Wire` | `ctx` + `write(u8)` / `latch` / `reset` hooks (no capture) |
 | `attach(wire, ref_hz): Dev` | store wire + reference clock; no heap |
 | `Dev.send(ftw, phase, power_down)` | stream the 40-bit word, then latch |
 | `Dev.set_freq(freq_hz)` | program a frequency (phase 0, powered up) |
@@ -43,9 +48,7 @@ klin run -I. examples/host_smoke.kl
 | `Dev.power_down()` | latch the power-down bit |
 | `Dev.reset()` | pulse `RESET` through the wire |
 
-Everything on the data path is `i64`: Klin's MVP has no integer-width cast, and
-a 32-bit FTW needs a 64-bit intermediate. Each streamed value is a `0..255`
-byte. Phase is a 5-bit code — 11.25° per step.
+Phase is a 5-bit code — 11.25° per step.
 
 ### Wire
 
@@ -60,8 +63,8 @@ byte. Phase is a 5-bit code — 11.25° per step.
 import klin_ad9850 dds
 
 // One byte, LSB first, over app-owned GPIO (pseudo — supply your machine_* pins).
-fn dds_write(ctx: *mut u8, b: i64) {
-    let mut bit: i64 = 0
+fn dds_write(ctx: *mut u8, b: u8) {
+    let mut bit: u8 = 0
     while bit < 8 {
         // data.set((b >> bit) & 1); wclk.high(); wclk.low()
         bit = bit + 1

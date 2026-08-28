@@ -7,8 +7,8 @@ struct Log {
     n: i32
 }
 
-fn log_write(ctx: *mut u8, b: i64) {
-    printf("  byte %02lX\n", b & 0xFF)
+fn log_write(ctx: *mut u8, b: u8) {
+    printf("  byte %02X\n", cast(u32, b))
 }
 
 fn log_latch(ctx: *mut u8) {
@@ -20,10 +20,10 @@ fn log_reset(ctx: *mut u8) {
 }
 
 fn main() {
-    printf("klin_ad9850 v%d, ref=%ld Hz\n", dds.version(), dds.default_ref_hz())
-    printf("FTW(1 Hz)   = %ld\n", dds.tuning_word(1, dds.default_ref_hz()))
-    printf("FTW(1 MHz)  = %ld\n", dds.tuning_word(1000000, dds.default_ref_hz()))
-    printf("FTW(10 MHz) = %ld\n", dds.tuning_word(10000000, dds.default_ref_hz()))
+    printf("klin_ad9850 v%d, ref=%u Hz\n", dds.version(), dds.default_ref_hz())
+    printf("FTW(1 Hz)   = %u\n", dds.tuning_word(1, dds.default_ref_hz()))
+    printf("FTW(1 MHz)  = %u\n", dds.tuning_word(1000000, dds.default_ref_hz()))
+    printf("FTW(10 MHz) = %u\n", dds.tuning_word(10000000, dds.default_ref_hz()))
 
     let mut lg = Log{ n: 0 }
     let wire = dds.Wire{
